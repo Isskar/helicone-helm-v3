@@ -7,6 +7,22 @@ externalSecrets:
 
 helicone:
   # Configuration générale adaptée à votre domaine
+  s3:
+    serviceAccount:
+      enabled: false
+    bucketName: "helicone-storage"
+    endpoint: "http://helicone-core-minio:9000"
+
+  cloudSqlProxy:
+    enabled: false
+
+  migrationRunner:
+    image:
+      repository: helicone/migrations
+      pullPolicy: IfNotPresent
+      tag: "v2025.08.20"
+    resources: {}
+
   config:
     # URLs adaptées à isskar-hub.com
     siteUrl: "https://helicone.isskar-hub.com"
@@ -14,7 +30,11 @@ helicone:
     jawnPublicUrl: "https://helicone.isskar-hub.com/jawn"
     betterAuthTrustedOrigins: "https://helicone.isskar-hub.com"
 
-    # Configuration base de données interne
+    # Configuration base de données PostgreSQL Bitnami
+    dbHost: "app-chart-postgresql"
+    dbPort: "5432"
+    dbName: "helicone"
+    dbUser: "helicone"
     heliconePassword: "changeme-in-production"
 
     # Configuration ClickHouse interne
@@ -54,8 +74,20 @@ helicone:
     s3AccessKey: ""
     s3SecretKey: ""
 
-  # Configuration web avec ingress pour votre domaine
+  # Configuration web avec service et ingress
   web:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: helicone/web
+      pullPolicy: IfNotPresent
+      tag: "v2025.08.20"
+    extraEnvVars: []
+    router:
+      enabled: false
+    service:
+      type: ClusterIP
+      port: 3000
     ingress:
       enabled: true
       className: "nginx"
@@ -70,10 +102,33 @@ helicone:
         - hosts:
             - helicone.isskar-hub.com
           secretName: helicone-tls
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
+    verticalPodAutoscaler:
+      enabled: false
+    autoscaling:
+      enabled: false
+    podDisruptionBudget:
+      enabled: false
 
   # Configuration API Jawn
   jawn:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: helicone/jawn
+      pullPolicy: IfNotPresent
+      tag: "v2025.08.20"
+    extraEnvVars: []
     publicUrl: "https://helicone.isskar-hub.com/jawn"
+    service:
+      type: ClusterIP
+      port: 8585
     ingress:
       enabled: true
       className: "nginx"
@@ -89,23 +144,97 @@ helicone:
         - hosts:
             - helicone.isskar-hub.com
           secretName: helicone-tls
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
+    autoscaling:
+      enabled: false
 
-  # Configuration stockage avec des tailles adaptées
+  # Configuration stockage avec des tailles réduites
   clickhouse:
+    enabled: true
+    image:
+      repository: clickhouse/clickhouse-server
+      pullPolicy: IfNotPresent
+      tag: "23.4.2.11"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8123
     persistence:
-      size: 50Gi
+      size: 10Gi
       storageClass: "default"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
 
   minio:
+    enabled: true
+    image:
+      repository: minio/minio
+      pullPolicy: IfNotPresent
+      tag: "RELEASE.2023-05-18T00-05-36Z"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 9000
+      consolePort: 9001
+    ingress:
+      enabled: false
+      ingressClassName: ""
+      annotations: {}
     persistence:
-      size: 100Gi
+      size: 20Gi
       storageClass: "default"
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "50m"
+      limits:
+        memory: "512Mi"
+        cpu: "200m"
+    setup:
+      image:
+        repository: minio/mc
+        tag: "latest"
+        pullPolicy: IfNotPresent
+      buckets:
+        - "helicone-storage"
 
   cloudnativepg:
-    cluster:
-      storage:
-        size: 20Gi
-        storageClass: "default"
+    enabled: false
+
+  # Configuration pour créer le secret postgres-credentials avec PostgreSQL Bitnami
+  config:
+    dbHost: "app-chart-postgresql"
+    dbPort: "5432"
+    dbName: "helicone"
+    dbUser: "helicone"
+
+  aiGateway:
+    enabled: false
+
+mailhog:
+  enabled: true
+  image:
+    repository: mailhog/mailhog
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "25m"
+    limits:
+      memory: "128Mi"
+      cpu: "50m"
 
 # Désactiver AI Gateway pour commencer
 aiGateway:
@@ -114,3 +243,32 @@ aiGateway:
     aiGatewayAnthropicApiKey: ""
     aiGatewayGeminiApiKey: ""
     aiGatewayHeliconeApiKey: ""
+
+# Configuration PostgreSQL Bitnami
+postgresql:
+  enabled: true
+  image:
+    tag: "latest"  # Version PostgreSQL la plus récente
+  auth:
+    username: helicone
+    database: helicone
+    existingSecret: my-secretenv
+    secretKeys:
+      userPasswordKey: helicone-database-password
+      adminPasswordKey: helicone-database-password
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    persistence:
+      size: 10Gi
+      storageClass: "default"
+  replicaCount: 1
+
+# Désactiver le sous-chart CloudNativePG
+cloudnative-pg:
+  enabled: false

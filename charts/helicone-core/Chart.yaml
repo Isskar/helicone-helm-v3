@@ -11,10 +11,14 @@ dependencies:
     version: "0.2.0"
     repository: "oci://registry-1.docker.io/helicone"
     condition: helicone.aiGateway.enabled
+  - name: postgresql
+    version: "12.12.10"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
   - name: cloudnative-pg
     version: "1.0.8"
     repository: "https://charts.bitnami.com/bitnami"
-    condition: cloudnative-pg.enabled  # Changed condition to prevent subchart installation
+    condition: cloudnative-pg.enabled
 
 keywords:
   - helicone
