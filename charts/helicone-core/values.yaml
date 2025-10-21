@@ -1,359 +1,116 @@
-################################################################################
-#
-#                            HELICONE CORE
-#
-################################################################################
+# Configuration Helicone pour PlateformeIsskar
+# Basé sur secrets.example.yaml et adapté pour votre infrastructure
+
+# Désactiver External Secrets (utiliser secrets Kubernetes standards)
+externalSecrets:
+  enabled: false
 
 helicone:
-  s3:
-    serviceAccount:
-      enabled: true
-      region: "us-west-2"
-    bucketName: "helm-request-response-storage"
-    endpoint: "https://s3.us-west-2.amazonaws.com"
+  # Configuration générale adaptée à votre domaine
+  config:
+    # URLs adaptées à isskar-hub.com
+    siteUrl: "https://helicone.isskar-hub.com"
+    nextPublicAppUrl: "https://helicone.isskar-hub.com"
+    jawnPublicUrl: "https://helicone.isskar-hub.com/jawn"
+    betterAuthTrustedOrigins: "https://helicone.isskar-hub.com"
 
+    # Configuration base de données interne
+    heliconePassword: "changeme-in-production"
+
+    # Configuration ClickHouse interne
+    clickhouseUrl: "http://helicone-core-clickhouse:8123"
+    clickhouseUser: "default"
+
+    # Configuration MinIO interne (stockage local)
+    s3BucketName: "helicone-storage"
+    s3Endpoint: "http://helicone-core-minio:9000"
+
+    # Configuration environnement
+    nodeEnv: "production"
+    vercelEnv: "production"
+    disableSignup: "false"
+    enableEmailSignup: "true"
+
+  # Secrets pour les composants internes
+  secrets:
+    # Auth secret (généré automatiquement ou fourni)
+    betterAuthSecret: "your-secret-key-here"
+
+    # MinIO credentials
+    minioRootUser: "admin"
+    minioRootPassword: "changeme-in-production"
+
+    # Base de données
+    postgresPassword: "changeme-in-production"
+    heliconePassword: "changeme-in-production"
+
+    # ClickHouse
+    clickhouseUser: "default"
+
+    # Désactiver Stripe (pas nécessaire)
+    stripeSecretKey: ""
+
+    # Désactiver S3 externes (utiliser MinIO)
+    s3AccessKey: ""
+    s3SecretKey: ""
+
+  # Configuration web avec ingress pour votre domaine
   web:
-    enabled: true
-    image:
-      repository: helicone/web
-      pullPolicy: IfNotPresent
-      tag: "v2025.08.20"
-    replicaCount: 1
-    service:
-      annotations: {}
-      type: ClusterIP
-      port: 3000
-    extraEnvVars: []
     ingress:
       enabled: true
       className: "nginx"
       annotations:
         cert-manager.io/cluster-issuer: "letsencrypt-prod"
       hosts:
-        - host: filevine.helicone.ai
+        - host: helicone.isskar-hub.com
           paths:
             - path: /
               pathType: Prefix
       tls:
         - hosts:
-            - filevine.helicone.ai
-          secretName: heliconetest-tls
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-    verticalPodAutoscaler:
-      enabled: false
-      updateMode: "Off"
-      minAllowed:
-        cpu: 100m
-        memory: 128Mi
-      maxAllowed:
-        cpu: 1000m
-        memory: 2Gi
-    podDisruptionBudget:
-      enabled: true
-      minAvailable: 1
-      maxUnavailable: null
-    autoscaling:
-      enabled: true
-      minReplicas: 2
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
-      behavior:
-        scaleDown:
-          stabilizationWindowSeconds: 300
-          percentPolicy: 50
-          periodSeconds: 60
-        scaleUp:
-          stabilizationWindowSeconds: 60
-          percentPolicy: 100
-          periodSeconds: 15
+            - helicone.isskar-hub.com
+          secretName: helicone-tls
 
-    router:
-      enabled: true
-
-  cloudSqlProxy:
-    enabled: false
-    image:
-      repository: gcr.io/cloudsql-docker/gce-proxy
-      tag: "1.33.2"
-      pullPolicy: IfNotPresent
-    connectionName: ""
-    port: 5432
-    resources:
-      requests:
-        memory: "64Mi"
-        cpu: "50m"
-      limits:
-        memory: "128Mi"
-        cpu: "100m"
-
-    serviceAccountSecretName: "cloudsql-key"
-    serviceAccountSecretKey: "key.json"
-
-    useWorkloadIdentity: false
-    workloadIdentityAnnotation: ""
-
-    extraArgs: []
-
-  migrationRunner:
-    image:
-      repository: helicone/migrations
-      pullPolicy: IfNotPresent
-      tag: "v2025.08.20"
-    resources: {}
-
-  cloudnativepg:
-    enabled: true
-    cluster:
-      name: helicone-postgres
-      instances: 1
-      # IMPORTANT: CloudNativePG requires specific PostgreSQL images that include the CNPG manager
-      # DO NOT use standard PostgreSQL images (e.g., bitnami/postgresql, postgres:latest)
-      # Always use ghcr.io/cloudnative-pg/postgresql images
-      image:
-        name: ghcr.io/cloudnative-pg/postgresql
-        tag: "17.5"  # Use the PostgreSQL version you need
-      postgresql:
-        parameters:
-          max_connections: "200"
-          shared_buffers: "128MB"
-          effective_cache_size: "1GB"
-          maintenance_work_mem: "64MB"
-          checkpoint_completion_target: "0.9"
-          wal_buffers: "16MB"
-          default_statistics_target: "100"
-          random_page_cost: "1.1"
-          effective_io_concurrency: "200"
-      bootstrap:
-        initdb:
-          database: helicone_test
-          owner: helicone
-          secret:
-            name: helicone-app-credentials
-          postInitSQL:
-            - "ALTER USER helicone CREATEROLE;"
-            - "GRANT postgres TO helicone;"
-      storage:
-        size: 5Gi
-        storageClass: "gp2"
-      monitoring:
-        enabled: true
-      backup:
-        enabled: false
-        retentionPolicy: "30d"
-      resources:
-        requests:
-          memory: "512Mi"
-          cpu: "250m"
-        limits:
-          memory: "1Gi"
-          cpu: "500m"
-
-  aiGateway:
-    enabled: false
-
-  clickhouse:
-    enabled: true
-    image:
-      repository: clickhouse/clickhouse-server
-      pullPolicy: IfNotPresent
-      tag: "23.4.2.11"
-    replicaCount: 1
-    service:
-      annotations: {}
-      type: ClusterIP
-      port: 8123
-    resources:
-      requests:
-        memory: "512Mi"
-        cpu: "250m"
-      limits:
-        memory: "1Gi"
-        cpu: "500m"
-    persistence:
-      storageClass: "gp2"
-      size: 10Gi
-
-  # Note: If enabled is set to false, then S3 is used instead of MinIO
-  minio:
-    enabled: false
-    image:
-      repository: minio/minio
-      pullPolicy: IfNotPresent
-      tag: "RELEASE.2023-05-18T00-05-36Z"
-    replicaCount: 1
-    service:
-      annotations: {}
-      type: ClusterIP
-      port: 9000
-      consolePort: 9001
-    resources: {}
-    persistence:
-      storageClass: "gp2-immediate"
-      size: 20Gi
-    ingress:
-      enabled: false
-      ingressClassName: ""
-      annotations: {}
-    setup:
-      image:
-        repository: minio/mc
-        tag: "latest"
-        pullPolicy: IfNotPresent
-      buckets:
-        - "request-response-storage"
-
+  # Configuration API Jawn
   jawn:
-    enabled: true
-    image:
-      repository: helicone/jawn
-      pullPolicy: IfNotPresent
-      tag: "v2025.08.20"
-    replicaCount: 1
-    service:
-      annotations: {}
-      type: ClusterIP
-      port: 8585
-    extraEnvVars: []
-    publicUrl: "https://filevine.helicone.ai/jawn"
+    publicUrl: "https://helicone.isskar-hub.com/jawn"
     ingress:
       enabled: true
       className: "nginx"
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /$2
-        nginx.ingress.kubernetes.io/proxy-body-size: "100m"
         cert-manager.io/cluster-issuer: "letsencrypt-prod"
       hosts:
-        - host: filevine.helicone.ai
+        - host: helicone.isskar-hub.com
           paths:
             - path: /jawn(/|$)(.*)
               pathType: ImplementationSpecific
       tls:
         - hosts:
-            - filevine.helicone.ai
-          secretName: heliconetest-tls
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        cpu: 250m
-        memory: 512Mi
-    autoscaling:
-      enabled: true
-      minReplicas: 1
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
-      behavior:
-        scaleDown:
-          stabilizationWindowSeconds: 300
-          percentPolicy: 50
-          periodSeconds: 60
-        scaleUp:
-          stabilizationWindowSeconds: 60
-          percentPolicy: 100
-          periodSeconds: 15
+            - helicone.isskar-hub.com
+          secretName: helicone-tls
 
-  # Application configuration
-  config:
-    # External database configuration (not needed when cloudnativepg.enabled=true)
-    dbPort: "5432" # Default port for PostgreSQL
-    databaseUrlSecretName: ""
-    databaseUrlSecretKey: ""
-    heliconePassword: "changeme-in-production" # Password for helicone app user
-    vercelEnv: "development"
-    clickhouseUrl: "https://ucewi94kth.us-west-2.aws.clickhouse.cloud:8443" # TODO Not doing DRY between the two configs (above configuration as well)
-    clickhouseUser: "default"
-    s3BucketName: "helm-request-response-storage"
-    s3Endpoint: "http://helicone-core-minio:9000"
-    openaiProxyPort: "8787"
-    heliconeApiPort: "8788"
-    anthropicProxyPort: "8789"
-    gatewayApiPort: "8790"
-    jawnPort: "8585"
-    jawnPublicUrl: "https://filevine.helicone.ai/jawn"
-    kongHttpPort: "8000"
-    kongHttpsPort: "8443"
-    pgrstDbSchemas: "public,storage,graphql_public"
-    siteUrl: "https://filevine.helicone.ai"
-    nextPublicAppUrl: "https://filevine.helicone.ai"
-    betterAuthTrustedOrigins: "https://filevine.helicone.ai,http://filevine.helicone.ai"
-    additionalRedirectUrls: ""
-    jwtExpiry: "3600"
-    disableSignup: "false"
-    apiExternalUrl: "http://localhost:8000"
-    mailerUrlpathsConfirmation: "/auth/v1/verify"
-    mailerUrlpathsInvite: "/auth/v1/verify"
-    mailerUrlpathsRecovery: "/auth/v1/verify"
-    mailerUrlpathsEmailChange: "/auth/v1/verify"
-    smtpHost: "helicone-mailhog"
-    enableEmailSignup: "true"
-    enableEmailAutoconfirm: "false"
-    enablePhoneSignup: "true"
-    enablePhoneAutoconfirm: "true"
-    studioDefaultOrganization: "Default Organization"
-    studioDefaultProject: "Default Project"
-    studioPort: "3000"
-    imgproxyEnableWebpDetection: "true"
-    functionsVerifyJwt: "false"
-    dockerSocketLocation: "/var/run/docker.sock"
-    googleProjectId: "GOOGLE_PROJECT_ID"
-    googleProjectNumber: "GOOGLE_PROJECT_NUMBER"
-    nodeEnv: "development"
+  # Configuration stockage avec des tailles adaptées
+  clickhouse:
+    persistence:
+      size: 50Gi
+      storageClass: "default"
 
-mailhog:
-  enabled: true
-  image:
-    repository: mailhog/mailhog
-    tag: latest
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      memory: "128Mi"
-      cpu: "100m"
-    limits:
-      memory: "256Mi"
-      cpu: "200m"
+  minio:
+    persistence:
+      size: 100Gi
+      storageClass: "default"
 
-#################################################################################
-# External Secrets Configuration
-#################################################################################
+  cloudnativepg:
+    cluster:
+      storage:
+        size: 20Gi
+        storageClass: "default"
 
-# Note: A secrets manager controller is required to be installed in the cluster to use this feature.
-# See: https://github.com/external-secrets/external-secrets
-externalSecrets:
-  enabled: true
-
-  refreshInterval: "30s"
-  aws:
-    region: "us-west-2"
-  serviceAccount:
-    name: "external-secrets-sa"
-    annotations:
-      aws.amazon.com/pod-identity: "enabled"
-
-  secretPrefix: "helicone"
-# When externalSecrets.enabled is false, vanilla Kubernetes secrets will be used
-# (secrets are defined here in the values.yaml or passed as secrets.yaml via the -f flag during install)
-
-#################################################################################
-# Bitnami CloudNativePG Configuration
-#################################################################################
-# Disable the entire cloudnative-pg subchart since we have the operator in cnpg-system
-cloudnative-pg:
-  enabled: false  # Disable the entire subchart
-  # Disable operator installation - we already have one in cnpg-system
-  operator:
-    enabled: false
-  crds:
-    install: false
-  # Disable the Barman Cloud plugin to avoid ClusterRole conflicts in ArgoCD
-  pluginBarmanCloud:
-    enabled: false
+# Désactiver AI Gateway pour commencer
+aiGateway:
+  secrets:
+    aiGatewayOpenaiApiKey: ""
+    aiGatewayAnthropicApiKey: ""
+    aiGatewayGeminiApiKey: ""
+    aiGatewayHeliconeApiKey: ""

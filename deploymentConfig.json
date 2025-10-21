@@ -1,0 +1,24 @@
+{
+    "secrets": [
+        {
+            "nameInKeyvault": "helicone-database-password",
+            "nameInTargetEnvironment": "DATABASE_PASSWORD"
+        },
+        {
+            "nameInKeyvault": "helicone-better-auth-secret",
+            "nameInTargetEnvironment": "BETTER_AUTH_SECRET"
+        },
+        {
+            "nameInKeyvault": "helicone-clickhouse-password",
+            "nameInTargetEnvironment": "CLICKHOUSE_PASSWORD"
+        },
+        {
+            "nameInKeyvault": "helicone-minio-root-user",
+            "nameInTargetEnvironment": "MINIO_ROOT_USER"
+        },
+        {
+            "nameInKeyvault": "helicone-minio-root-password",
+            "nameInTargetEnvironment": "MINIO_ROOT_PASSWORD"
+        }
+    ]
+}
