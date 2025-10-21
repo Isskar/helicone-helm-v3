@@ -265,7 +265,7 @@ ClickHouse URL with scheme and port eg http://localhost:18123
 {{- else if .Values.helicone.cloudSqlProxy.enabled }}
   value: {{ printf "jdbc:postgresql://localhost:%s/%s?sslmode=disable&options=-c%%20search_path%%3Dpublic,extensions" (include "helicone.cloudSqlProxy.port" .) .Values.helicone.config.dbName | quote }}
 {{- else }}
-  value: {{ .Values.helicone.config.flywayUrl | default (printf "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable&options=-c%%20search_path%%3Dpublic,extensions") | quote }}
+  value: {{ .Values.helicone.config.flywayUrl | default (printf "jdbc:postgresql://%s:%s/%s?sslmode=disable&options=-c%%20search_path%%3Dpublic,extensions" .Values.helicone.config.dbHost .Values.helicone.config.dbPort .Values.helicone.config.dbName) | quote }}
 {{- end }}
 {{- end }}
 
