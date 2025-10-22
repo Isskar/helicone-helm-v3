@@ -362,7 +362,7 @@ ClickHouse URL with scheme and port eg http://localhost:18123
 
 {{- define "helicone.env.nextPublicBetterAuth" -}}
 - name: NEXT_PUBLIC_BETTER_AUTH
-  value: {{ .Values.helicone.config.nextPublicBetterAuth | default "true" | quote }}
+  value: {{ .Values.helicone.config.nextPublicBetterAuth | default "false" | quote }}
 {{- end }}
 
 {{- define "helicone.env.s3ForcePathStyle" -}}
