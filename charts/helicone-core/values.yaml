@@ -147,10 +147,10 @@ helicone:
     resources:
       requests:
         cpu: 25m
-        memory: 64Mi
+        memory: 128Mi
       limits:
-        cpu: 100m
-        memory: 256Mi
+        cpu: 200m
+        memory: 512Mi
     autoscaling:
       enabled: false
 

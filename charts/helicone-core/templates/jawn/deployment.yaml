@@ -158,7 +158,7 @@ spec:
             httpGet:
               path: /healthcheck
               port: http
-            initialDelaySeconds: 15
+            initialDelaySeconds: 90
             periodSeconds: 10
             failureThreshold: 4
       {{- if and .Values.helicone.cloudSqlProxy.enabled (not .Values.helicone.cloudSqlProxy.useWorkloadIdentity) }}
