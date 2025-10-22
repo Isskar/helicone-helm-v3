@@ -307,12 +307,10 @@ ClickHouse URL with scheme and port eg http://localhost:18123
       name: postgres-credentials
       key: url
   {{- else }}
-  value: {{ printf "postgresql://%s:%s@%s:%s/%s" 
-    (.Values.helicone.config.dbUser | default "postgres") 
-    (.Values.helicone.config.dbPassword | default "postgres") 
-    (.Values.helicone.config.dbHost | default "localhost") 
-    (.Values.helicone.config.dbPort | default "5432") 
-    (.Values.helicone.config.dbName | default "postgres") | quote }}
+  valueFrom:
+    secretKeyRef:
+      name: postgres-credentials
+      key: url
   {{- end }}
 
 - name: DATABASE_URL
@@ -329,12 +327,10 @@ ClickHouse URL with scheme and port eg http://localhost:18123
       name: postgres-credentials
       key: url
   {{- else }}
-  value: {{ printf "postgresql://%s:%s@%s:%s/%s" 
-    (.Values.helicone.config.dbUser | default "postgres") 
-    (.Values.helicone.config.dbPassword | default "postgres") 
-    (.Values.helicone.config.dbHost | default "localhost") 
-    (.Values.helicone.config.dbPort | default "5432") 
-    (.Values.helicone.config.dbName | default "postgres") | quote }}
+  valueFrom:
+    secretKeyRef:
+      name: postgres-credentials
+      key: url
   {{- end }}
   {{- end }}
 

@@ -124,7 +124,7 @@ spec:
           image: "{{ .Values.helicone.migrationRunner.image.repository }}:{{ .Values.helicone.migrationRunner.image.tag }}"
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c"]
-          args: ["sed -i 's/--upgrade --no-password/--upgrade --no-password --skip-confirmation/g' /app/run_migrations.sh && ./run_migrations.sh"]
+          args: ["find / -name 'run_migrations.sh' 2>/dev/null | head -1 | xargs -I {} sed -i 's/--upgrade --no-password/--upgrade --no-password --skip-confirmation/g' {} && find / -name 'run_migrations.sh' 2>/dev/null | head -1 | xargs -I {} sh {}"]
           {{- with .Values.helicone.migrationRunner.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
