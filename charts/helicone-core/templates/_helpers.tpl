@@ -274,7 +274,7 @@ ClickHouse URL with scheme and port eg http://localhost:18123
 {{- if .Values.helicone.cloudnativepg.enabled }}
   value: {{ .Values.helicone.cloudnativepg.cluster.bootstrap.initdb.owner | quote }}
 {{- else }}
-  value: {{ .Values.helicone.config.dbUser | required "When cloudnativepg.enabled is false, helicone.config.dbUser must be provided" | quote }}
+  value: "postgres"
 {{- end }}
 {{- end }}
 
