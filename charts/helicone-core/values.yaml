@@ -252,11 +252,19 @@ postgresql:
   auth:
     username: helicone
     database: helicone
+    enablePostgresUser: true
     existingSecret: my-secretenv
     secretKeys:
       userPasswordKey: helicone-database-password
       adminPasswordKey: helicone-database-password
+      postgresPasswordKey: helicone-database-password
+  volumePermissions:
+    enabled: true
+    image:
+      tag: latest
   primary:
+    initdb:
+      userScriptsConfigMap: helicone-init-sql
     resources:
       requests:
         cpu: 100m

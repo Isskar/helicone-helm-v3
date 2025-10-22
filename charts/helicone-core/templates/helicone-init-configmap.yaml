@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: helicone-init-sql
+  namespace: {{ .Release.Namespace }}
+data:
+  01_setup_helicone.sql: |
+    ALTER USER helicone CREATEROLE;
